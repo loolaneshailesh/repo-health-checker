@@ -1,0 +1,39 @@
+# ═══════════════════════════════════════════════════════════════
+#  GitHub Actions Workflow — Repo Health Check
+#
+#  This file is automatically detected by GitHub.
+#  It runs check.sh on every push and on every pull request.
+# ═══════════════════════════════════════════════════════════════
+
+name: Repo Health Check
+
+# WHEN should this workflow run?
+on:
+  push:
+    branches: [ '**' ]      # any branch, any push
+  pull_request:
+    branches: [ main ]      # any PR targeting main
+  workflow_dispatch:        # also lets you trigger it manually from GitHub UI
+
+jobs:
+  health-check:
+    name: Run Repo Health Checker
+    runs-on: ubuntu-latest  # GitHub gives us a free Ubuntu virtual machine
+
+    steps:
+      # STEP 1 — Pull the repo into the runner
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Get FULL git history (not just latest commit)
+          # so commit-message check can read past commits.
+          fetch-depth: 0
+
+      # STEP 2 — Make our script executable
+      # (Git tracks this bit, but being explicit avoids surprises.)
+      - name: Make check.sh executable
+        run: chmod +x check.sh
+
+      # STEP 3 — Run the actual health checker
+      - name: Run Repo Health Checker
+        run: ./check.sh
