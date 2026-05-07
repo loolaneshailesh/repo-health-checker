@@ -1,6 +1,6 @@
 # Repo Health Checker
 
-[![Repo Health Check](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/check.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/check.yml)
+[![Repo Health Check](https://github.com/loolaneshailesh/repo-health-checker/actions/workflows/check.yml/badge.svg)](https://github.com/loolaneshailesh/repo-health-checker/actions/workflows/check.yml)
 
 > **PACE 2026 — Week 1 Mini Project**
 > A self-validating GitHub repository. Every push runs an automated health
