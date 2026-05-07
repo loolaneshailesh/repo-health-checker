@@ -298,6 +298,47 @@ print_health_score() {
 }
 
 # ===============================================================
+#  GITHUB ACTIONS DIAGNOSTIC REPORTER
+# ===============================================================
+generate_diagnostic_report() {
+    if [ -n "$GITHUB_STEP_SUMMARY" ]; then
+        echo "# 🏥 Repo Health Diagnostic Report" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "The health checker found **$FAILED** issue(s) that need your attention before this code can be merged." >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        echo "### How to Fix:" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        
+        for reason in "${FAIL_REASONS[@]}"; do
+            echo "#### ❌ $reason" >> "$GITHUB_STEP_SUMMARY"
+            if [[ "$reason" == *"README.md"* ]]; then
+                echo "**Fix:** Add a \`README.md\` file to the root of your repository with at least 10 lines of meaningful documentation about your project." >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$reason" == *".gitignore"* ]]; then
+                echo "**Fix:** Create a \`.gitignore\` file in the root of your repository and add at least one item (like \`node_modules/\` or \`.env\`)." >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$reason" == *"Secret files"* ]]; then
+                echo "**Fix:** You have committed a file that should be kept secret (like \`.env\`). Run \`git rm --cached <file>\` to untrack it, then add the filename to your \`.gitignore\`." >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$reason" == *"Hardcoded secret"* ]]; then
+                echo "**Fix:** You have hardcoded an API key, token, or password. Move this secret to a \`.env\` file and read it via environment variables." >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$reason" == *"Merge conflict"* ]]; then
+                echo "**Fix:** Resolve the merge conflicts in your files by removing the \`<<<<<<<\`, \`=======\`, and \`>>>>>>>\` markers." >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$reason" == *"commit"* ]]; then
+                echo "**Fix:** Write more descriptive commit messages (at least 5 words). You can amend your last commit using \`git commit --amend\`." >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$reason" == *"Large files"* ]]; then
+                echo "**Fix:** You committed a file over 5MB. Use Git LFS for large files, or remove it using \`git rm --cached <file>\`." >> "$GITHUB_STEP_SUMMARY"
+            elif [[ "$reason" == *"dead link"* ]]; then
+                echo "**Fix:** Check the URLs in your markdown files and update or remove any broken links." >> "$GITHUB_STEP_SUMMARY"
+            else
+                echo "**Fix:** Please review the script logs for more details." >> "$GITHUB_STEP_SUMMARY"
+            fi
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+        done
+        
+        echo "---" >> "$GITHUB_STEP_SUMMARY"
+        echo "*Need more help? Check the [Pace 2026 Guidelines](https://github.com/loolaneshailesh/repo-health-checker).* 🚀" >> "$GITHUB_STEP_SUMMARY"
+    fi
+}
+
+# ===============================================================
 #  RUN EVERYTHING
 # ===============================================================
 print_header
@@ -322,6 +363,8 @@ if [ "$FAILED" -gt 0 ]; then
             echo "  - $reason"
         done
     fi
+    
+    generate_diagnostic_report
     exit 1
 else
     echo -e "${GREEN}${BOLD}CI GATE: PASSED${NC} - repo is healthy. Push approved."
