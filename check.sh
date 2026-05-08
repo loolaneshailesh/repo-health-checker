@@ -14,6 +14,27 @@
 set -u
 set -o pipefail
 
+# --- FIX MODE PARSING ---
+FIX_MODE=0
+if [ "${1:-}" == "--fix" ]; then
+    FIX_MODE=1
+fi
+
+ask_to_fix() {
+    if [ "$FIX_MODE" -eq 1 ]; then
+        read -r -p "  [FIX] $1 [y/N]: " response
+        case "$response" in
+            [yY][eE][sS]|[yY]) 
+                return 0
+                ;;
+            *)
+                return 1
+                ;;
+        esac
+    fi
+    return 1
+}
+
 # --- COLOR CODES (so output is readable in Actions logs) ---
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -68,6 +89,15 @@ check_readme() {
     print_check 1 "README.md exists and has substance"
     if [ ! -f "README.md" ]; then
         fail "README.md is missing"
+        if ask_to_fix "Create a basic README.md template?"; then
+            echo "# Project Name" > README.md
+            echo "" >> README.md
+            echo "Description goes here." >> README.md
+            echo "" >> README.md
+            echo "Created by Repo Health Checker." >> README.md
+            for i in {1..6}; do echo "" >> README.md; done
+            echo "  ${GREEN}[FIX APPLIED]${NC} Created README.md"
+        fi
         return
     fi
     line_count=$(wc -l < README.md)
@@ -85,8 +115,22 @@ check_gitignore() {
     print_check 2 ".gitignore is present"
     if [ ! -f ".gitignore" ]; then
         fail ".gitignore is missing"
+        if ask_to_fix "Create a default .gitignore?"; then
+            echo "node_modules/" > .gitignore
+            echo ".env" >> .gitignore
+            echo "*.log" >> .gitignore
+            echo ".DS_Store" >> .gitignore
+            echo "  ${GREEN}[FIX APPLIED]${NC} Created .gitignore"
+        fi
     elif [ ! -s ".gitignore" ]; then
         fail ".gitignore exists but is empty"
+        if ask_to_fix "Populate .gitignore with defaults?"; then
+            echo "node_modules/" > .gitignore
+            echo ".env" >> .gitignore
+            echo "*.log" >> .gitignore
+            echo ".DS_Store" >> .gitignore
+            echo "  ${GREEN}[FIX APPLIED]${NC} Populated .gitignore"
+        fi
     else
         pass ".gitignore present and non-empty"
     fi
@@ -100,7 +144,13 @@ check_secret_files() {
     bad_files=$(git ls-files | grep -E '(^|/)(\.env(\..*)?$|.*\.key$|.*\.pem$|id_rsa$|.*\.p12$|credentials\.json$)' || true)
     if [ -n "$bad_files" ]; then
         fail "Secret files detected in repo:"
-        echo "$bad_files" | while read -r f; do echo "         -> $f"; done
+        for f in $bad_files; do 
+            echo "         -> $f"
+            if ask_to_fix "Untrack $f from git?"; then
+                git rm --cached "$f" >/dev/null 2>&1
+                echo "  ${GREEN}[FIX APPLIED]${NC} Untracked $f"
+            fi
+        done
     else
         pass "No secret files found in tracked files"
     fi
